@@ -1,0 +1,44 @@
+{
+  "name": "cosmosjs-example",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node server.js",
+    "build": "next build",
+    "start": "NODE_ENV=production node server.js",
+    "lint": "tslint -c tslint.json -p tsconfig.json",
+    "lint-fix": "tslint -c tslint.json -p tsconfig.json --fix",
+    "prettier": "find ./**/*.{ts,tsx} -type f | xargs prettier --check",
+    "prettier-write": "find ./**/*.{ts,tsx} -type f | xargs prettier --write"
+  },
+  "pre-commit": [
+    "lint",
+    "prettier"
+  ],
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "antd": "^3.20.1",
+    "next": "^9.0.0",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-decorators": "^7.4.4",
+    "@types/next": "^8.0.5",
+    "@types/react": "^16.8.23",
+    "@types/react-dom": "^16.8.4",
+    "@types/styled-jsx": "^2.2.8",
+    "@zeit/next-css": "^1.0.1",
+    "babel-plugin-import": "^1.12.0",
+    "null-loader": "^3.0.0",
+    "pre-commit": "^1.2.2",
+    "prettier": "^1.18.2",
+    "tslint": "^5.18.0",
+    "tslint-config-prettier": "^1.18.0",
+    "tslint-plugin-prettier": "^2.0.1",
+    "typescript": "^3.5.2"
+  }
+}

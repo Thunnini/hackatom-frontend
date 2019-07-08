@@ -1,0 +1,27 @@
+{
+  "presets": [
+    [
+      "next/babel",
+      {
+        "preset-typescript": {
+          "distDir": "../build"
+        }
+      }
+    ]
+  ],
+  "plugins": [
+    [
+      "@babel/plugin-proposal-decorators",
+      {
+        "decoratorsBeforeExport": true
+      }
+    ],
+    [
+      "import",
+      {
+        "libraryName": "antd",
+        "style": "css"
+      }
+    ]
+  ]
+}
