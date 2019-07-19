@@ -5,6 +5,7 @@ import React, { Component } from "react";
 import SignInMnemonic from "../components/SignInMnemonic";
 import SendTx from "../components/SendTx";
 
+import { defaultBech32Config } from "@node-a-team/cosmosjs/dist/core/bech32Config";
 import { GaiaApi } from "@node-a-team/cosmosjs/dist/gaia/api";
 import { AccAddress } from "@node-a-team/cosmosjs/dist/common/address";
 import { WalletProvider } from "@node-a-team/cosmosjs/dist/core/walletProvider";
@@ -164,12 +165,17 @@ class App extends Component<FormComponentProps & {}, State> {
 
   private openSignInMnemonicModal = () => {
     SignInMnemonic.showModal((walletProvider: WalletProvider) => {
-      const api = new GaiaApi({
-        chainId: "cosmoshub-2",
-        walletProvider,
-        rpc: "http://35.245.26.237:26657",
-        rest: "http://localhost:1317"
-      });
+      const api = new GaiaApi(
+        {
+          chainId: "zone-1",
+          walletProvider,
+          rpc: "http://localhost:16657",
+          rest: "http://localhost:1317"
+        },
+        {
+          bech32Config: defaultBech32Config("zone")
+        }
+      );
 
       api
         .signIn(0)

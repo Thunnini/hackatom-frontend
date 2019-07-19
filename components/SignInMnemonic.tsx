@@ -111,7 +111,7 @@ export default class SignInMnemonic extends Component<{}, State>
     });
   }
   private getAddressFromMnemonic(mnemonic: string): string {
-    const bech32 = defaultBech32Config("cosmos");
+    const bech32 = defaultBech32Config("zone");
 
     const privKey = LocalWalletProvider.getPrivKeyFromMnemonic(
       new BIP44(44, 118, 0),
