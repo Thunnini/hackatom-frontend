@@ -9,7 +9,9 @@
         "prettier": true,
         "no-unused-variable": true,
         "no-submodule-imports": false,
-        "ordered-imports": false
+        "ordered-imports": false,
+        "object-literal-sort-keys": false,
+        "interface-name": false
     },
     "rulesDirectory": [
         "tslint-plugin-prettier"
