@@ -3,6 +3,7 @@ const dev = process.env.NODE_ENV !== "production";
 
 const { createServer } = require("http");
 const { parse } = require("url");
+const cookie = require("js-cookie");
 const next = require("next");
 const app = next({ dev });
 const handle = app.getRequestHandler();

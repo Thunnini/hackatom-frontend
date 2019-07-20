@@ -2,11 +2,14 @@ import { Button, Form, Input, notification } from "antd";
 import { FormComponentProps } from "antd/lib/form";
 import React, { Component } from "react";
 
+import { NextPageContext } from "next";
+
 import SignInMnemonic from "../components/SignInMnemonic";
 import SendTx from "../components/SendTx";
 
 import { defaultBech32Config } from "@node-a-team/cosmosjs/dist/core/bech32Config";
 import { GaiaApi } from "@node-a-team/cosmosjs/dist/gaia/api";
+import { Account } from "@node-a-team/cosmosjs/dist/core/account";
 import { AccAddress } from "@node-a-team/cosmosjs/dist/common/address";
 import { WalletProvider } from "@node-a-team/cosmosjs/dist/core/walletProvider";
 import { Coin } from "@node-a-team/cosmosjs/dist/common/coin";
@@ -16,27 +19,106 @@ import { MsgSwap } from "@node-a-team/cosmosjs/dist/gaia/msgs/swap";
 
 const FormItem = Form.Item;
 
+interface Props {
+  initialAddress: string | undefined;
+  initialCoins: string | undefined;
+}
+
 interface State {
   api: GaiaApi | null;
   address: string;
   coins: string;
+  coinsValidating: boolean;
 }
 
-class App extends Component<FormComponentProps & {}, State> {
+class App extends Component<FormComponentProps & Props, State> {
+  public static async getInitialProps(ctx: NextPageContext): Promise<Props> {
+    let initialAddress: string | undefined;
+    let initialCoins: string | undefined;
+
+    return SignInMnemonic.getInitialWalletProvider(
+      ctx,
+      async walletProvider => {
+        if (walletProvider) {
+          const api = new GaiaApi(
+            {
+              chainId: "zone-1",
+              walletProvider,
+              rpc: "http://localhost:16657", // TODO: separating endpoints for server and client
+              rest: "http://localhost:1317"
+            },
+            {
+              bech32Config: defaultBech32Config("zone")
+            }
+          );
+
+          await api.signIn(0);
+          const accounts = await api.wallet.getSignerAccounts(api.context);
+          const address = accounts[0].address;
+          const accAddress = new AccAddress(address);
+          const account = await api.rest.getAccount(accAddress.toBech32());
+
+          let coins = "";
+          for (const coin of account.getCoins()) {
+            coins += coin.amount.toString() + coin.denom + " ";
+          }
+
+          initialAddress = accAddress.toBech32();
+          initialCoins = coins;
+        }
+
+        return { initialAddress, initialCoins };
+      }
+    );
+  }
+
+  public static async getAccount(address: string): Promise<Account> {
+    const api = new GaiaApi(
+      {
+        chainId: "zone-1",
+        walletProvider: null as any,
+        rpc: "http://localhost:16657", // TODO: separating endpoints for server and client
+        rest: "http://localhost:1317"
+      },
+      {
+        bech32Config: defaultBech32Config("zone")
+      }
+    );
+
+    return api.rest.getAccount(address);
+  }
+
   public readonly state: State = {
     api: null,
     address: "",
-    coins: ""
+    coins: "",
+    coinsValidating: false
   };
 
+  public componentWillMount() {
+    if (this.props.initialAddress && this.props.initialCoins) {
+      this.setState({
+        address: this.props.initialAddress,
+        coins: this.props.initialCoins
+      });
+    }
+  }
+
+  public componentDidMount() {
+    this.initApi();
+  }
+
   public render() {
-    const { api, address, coins } = this.state;
+    const { api, address, coins, coinsValidating } = this.state;
     const { form } = this.props;
 
     return (
       <div>
-        <div className="container" style={{ paddingTop: 100 }}>
-          {api ? (
+        <div className="container">
+          <div style={{ width: "100%", textAlign: "center" }}>
+            <img id="logo" src="/static/everett-dark.svg" />
+          </div>
+          {api || address ? (
             <div className="signed-in">
               <h3>Account</h3>
               <Form
@@ -47,14 +129,25 @@ class App extends Component<FormComponentProps & {}, State> {
                 <FormItem label="Address" colon={false}>
                   <Input disabled={true} value={address} className="white" />
                 </FormItem>
-              </Form>
-              <Form
-                layout="horizontal"
-                labelCol={{ span: 8 }}
-                wrapperCol={{ span: 8 }}
-              >
-                <FormItem label="Coins" colon={false}>
+                <FormItem
+                  label="Coins"
+                  colon={false}
+                  hasFeedback={coinsValidating}
+                  validateStatus="validating"
+                >
                   <Input disabled={true} value={coins} className="white" />
+                </FormItem>
+                <FormItem colon={false} wrapperCol={{ span: 8, offset: 8 }}>
+                  <Button type="danger" onClick={this.logout}>
+                    Log out
+                  </Button>
+                  <Button
+                    id="refresh"
+                    type="primary"
+                    icon={"reload"}
+                    loading={coinsValidating}
+                    onClick={this.updateAccountCoins}
+                  ></Button>
                 </FormItem>
               </Form>
               <h3>Send</h3>
@@ -107,7 +200,11 @@ class App extends Component<FormComponentProps & {}, State> {
                   })(<Input />)}
                 </FormItem>
                 <FormItem colon={false} wrapperCol={{ span: 8, offset: 8 }}>
-                  <Button type="primary" htmlType="submit">
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    disabled={api == null}
+                  >
                     Send
                   </Button>
                 </FormItem>
@@ -158,7 +255,11 @@ class App extends Component<FormComponentProps & {}, State> {
                   })(<Input />)}
                 </FormItem>
                 <FormItem colon={false} wrapperCol={{ span: 8, offset: 8 }}>
-                  <Button type="primary" htmlType="submit">
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    disabled={api == null}
+                  >
                     Swap
                   </Button>
                 </FormItem>
@@ -206,6 +307,15 @@ class App extends Component<FormComponentProps & {}, State> {
             text-align: center;
           }
 
+          #logo {
+            height: 90px;
+            margin: 30px auto;
+          }
+
+          .container :global(#refresh) {
+            margin-left: 10px;
+          }
+
           #doge {
             height: 40px;
           }
@@ -218,6 +328,63 @@ class App extends Component<FormComponentProps & {}, State> {
       </div>
     );
   }
+
+  private initApi() {
+    SignInMnemonic.getInitialWalletProvider(
+      null as any,
+      async walletProvider => {
+        if (walletProvider) {
+          const api = new GaiaApi(
+            {
+              chainId: "zone-1",
+              walletProvider,
+              rpc: "http://localhost:16657", // TODO: separating endpoints for server and client
+              rest: "http://localhost:1317"
+            },
+            {
+              bech32Config: defaultBech32Config("zone")
+            }
+          );
+
+          await api.signIn(0);
+          this.setState({
+            api
+          });
+
+          const accounts = await api.wallet.getSignerAccounts(api.context);
+          const address = accounts[0].address;
+          const accAddress = new AccAddress(address);
+          const account = await api.rest.getAccount(accAddress.toBech32());
+
+          let coins = "";
+          for (const coin of account.getCoins()) {
+            coins += coin.amount.toString() + coin.denom + " ";
+          }
+
+          this.setState({
+            api,
+            address: accAddress.toBech32(),
+            coins
+          });
+        } else {
+          this.setState({
+            api: null,
+            address: "",
+            coins: ""
+          });
+        }
+      }
+    );
+  }
+
+  private logout = () => {
+    SignInMnemonic.clear();
+    this.setState({
+      api: null,
+      address: "",
+      coins: ""
+    });
+  };
 
   private handleSend = (e: any) => {
     e.preventDefault();
@@ -294,11 +461,15 @@ class App extends Component<FormComponentProps & {}, State> {
     });
   };
 
-  private async updateAccountCoins(): Promise<void> {
+  private updateAccountCoins = async () => {
     const { api } = this.state;
     if (!api) {
       return;
     }
+
+    this.setState({
+      coinsValidating: true
+    });
 
     try {
       const account = await api.rest.getAccount(this.state.address);
@@ -316,8 +487,12 @@ class App extends Component<FormComponentProps & {}, State> {
         message: "Fail to fetch account",
         description: e.toString()
       });
+    } finally {
+      this.setState({
+        coinsValidating: false
+      });
     }
-  }
+  };
 }
 
 export default Form.create()(App);

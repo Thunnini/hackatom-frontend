@@ -1,6 +1,8 @@
 import { Button, Input, Form, Modal } from "antd";
 import React, { Component } from "react";
 
+import { NextPageContext } from "next";
+
 import { RNG } from "@node-a-team/cosmosjs/dist/utils/key";
 import {
   LocalWalletProvider,
@@ -15,6 +17,8 @@ import {
 
 import SignIn from "./SignIn";
 
+import Cookie from "js-cookie";
+
 const FormItem = Form.Item;
 
 interface State {
@@ -24,6 +28,40 @@ interface State {
 
 export default class SignInMnemonic extends Component<{}, State>
   implements SignIn {
+  public static async getInitialWalletProvider<R>(
+    ctx: NextPageContext,
+    onWalletProvided: (walletProvider: WalletProvider | undefined) => R
+  ): Promise<R> {
+    let mnemonic: string | undefined;
+    if (typeof window === "undefined") {
+      if (ctx.req) {
+        const cookie = ctx.req!.headers.cookie;
+        if (cookie) {
+          let mnemonicInCookie = cookie;
+          const start = cookie.indexOf("mnemonic=") + "mnemonic=".length;
+          const end = cookie.indexOf(";", start);
+          mnemonicInCookie = cookie.substring(
+            start,
+            end >= 0 ? end : undefined
+          );
+          mnemonic = mnemonicInCookie;
+        }
+      }
+    } else {
+      mnemonic = Cookie.get("mnemonic");
+    }
+
+    if (mnemonic) {
+      while (mnemonic.indexOf("%20") >= 0) {
+        mnemonic = mnemonic.replace("%20", " ");
+      }
+      const walletProvider = new LocalWalletProvider(mnemonic);
+      return onWalletProvided(walletProvider);
+    } else {
+      return onWalletProvided(undefined);
+    }
+  }
+
   public static showModal(
     onWalletProvided: (walletProvider: WalletProvider) => void
   ): void {
@@ -43,6 +81,10 @@ export default class SignInMnemonic extends Component<{}, State>
         onWalletProvided(signIn!.getWalletProvider());
       }
     });
+  }
+
+  public static clear(): void {
+    Cookie.remove("mnemonic");
   }
 
   public readonly state: State;
@@ -96,7 +138,7 @@ export default class SignInMnemonic extends Component<{}, State>
   }
 
   public getWalletProvider(): WalletProvider {
-    localStorage.setItem("mnemonic", this.state.mnemonic);
+    Cookie.set("mnemonic", this.state.mnemonic);
     return new LocalWalletProvider(this.state.mnemonic, this.rng());
   }
 
