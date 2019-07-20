@@ -92,18 +92,10 @@ export default class SignInMnemonic extends Component<{}, State>
   constructor(props: any) {
     super(props);
 
-    let state = {
+    const state = {
       mnemonic: "",
       address: ""
     };
-
-    const storageMnemonic = localStorage.getItem("mnemonic") as string;
-    if (storageMnemonic) {
-      state = {
-        mnemonic: storageMnemonic,
-        address: this.getAddressFromMnemonic(storageMnemonic)
-      };
-    }
 
     this.state = state;
   }
