@@ -42,26 +42,49 @@ class SendTx extends Component<Props & FormComponentProps> {
           const args = await sendTx.validateFields();
 
           try {
-            const result = await api.sendMsgs(msgs, {
-              accountNumber:
-                args.accountNumber === "auto" ? undefined : args.accountNumber,
-              sequence: args.sequence === "auto" ? undefined : args.sequence,
-              fee: Coin.parse(args.fee),
-              gas: args.gas,
-              memo: args.memo ? args.memo : ""
-            });
+            const result = await api.sendMsgs(
+              msgs,
+              {
+                accountNumber:
+                  args.accountNumber === "auto"
+                    ? undefined
+                    : args.accountNumber,
+                sequence: args.sequence === "auto" ? undefined : args.sequence,
+                fee: Coin.parse(args.fee),
+                gas: args.gas,
+                memo: args.memo ? args.memo : ""
+              },
+              "commit"
+            );
 
-            if (result.mode === "sync") {
-              if (result.code === 0) {
-                notification.success({
-                  message: "Success to send tx",
-                  description: "Wait a seconds. Tx will be commited soon."
-                });
-              } else {
-                notification.error({
-                  message: "Fail to send tx",
-                  description: result.log
-                });
+            if (result.mode === "commit") {
+              if (result.checkTx) {
+                if (result.checkTx.code) {
+                  notification.error({
+                    message: "Fail to send tx",
+                    description: result.checkTx.log
+                  });
+                  return;
+                }
+              }
+
+              if (result.deliverTx) {
+                if (
+                  result.deliverTx.code === 0 ||
+                  result.deliverTx.code === undefined
+                ) {
+                  notification.success({
+                    message: "Success to send tx",
+                    description: "Tx commited."
+                  });
+                  return;
+                } else {
+                  notification.error({
+                    message: "Fail to send tx",
+                    description: result.deliverTx.log
+                  });
+                  return;
+                }
               }
             }
           } catch (e) {

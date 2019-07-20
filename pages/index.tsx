@@ -1,4 +1,4 @@
-import { Button, Form, Input } from "antd";
+import { Button, Form, Input, notification } from "antd";
 import { FormComponentProps } from "antd/lib/form";
 import React, { Component } from "react";
 
@@ -12,22 +12,25 @@ import { WalletProvider } from "@node-a-team/cosmosjs/dist/core/walletProvider";
 import { Coin } from "@node-a-team/cosmosjs/dist/common/coin";
 
 import { MsgSend } from "@node-a-team/cosmosjs/dist/gaia/msgs/bank";
+import { MsgSwap } from "@node-a-team/cosmosjs/dist/gaia/msgs/swap";
 
 const FormItem = Form.Item;
 
 interface State {
   api: GaiaApi | null;
   address: string;
+  coins: string;
 }
 
 class App extends Component<FormComponentProps & {}, State> {
   public readonly state: State = {
     api: null,
-    address: ""
+    address: "",
+    coins: ""
   };
 
   public render() {
-    const { api, address } = this.state;
+    const { api, address, coins } = this.state;
     const { form } = this.props;
 
     return (
@@ -45,9 +48,18 @@ class App extends Component<FormComponentProps & {}, State> {
                   <Input disabled={true} value={address} className="white" />
                 </FormItem>
               </Form>
+              <Form
+                layout="horizontal"
+                labelCol={{ span: 8 }}
+                wrapperCol={{ span: 8 }}
+              >
+                <FormItem label="Coins" colon={false}>
+                  <Input disabled={true} value={coins} className="white" />
+                </FormItem>
+              </Form>
               <h3>Send</h3>
               <Form
-                onSubmit={this.handleSubmit}
+                onSubmit={this.handleSend}
                 layout="horizontal"
                 labelCol={{ span: 8 }}
                 wrapperCol={{ span: 8 }}
@@ -100,6 +112,57 @@ class App extends Component<FormComponentProps & {}, State> {
                   </Button>
                 </FormItem>
               </Form>
+              <h3 className="middle">
+                <img
+                  src="https://media1.tenor.com/images/abb9bb0bb79865bfc4ac963d4c30eb7a/tenor.gif?itemid=11191352"
+                  id="doge"
+                  className="middle"
+                ></img>
+                Swap
+              </h3>
+              <Form
+                onSubmit={this.handleSwap}
+                layout="horizontal"
+                labelCol={{ span: 8 }}
+                wrapperCol={{ span: 8 }}
+              >
+                <FormItem label="Asset" colon={false}>
+                  {form.getFieldDecorator("asset", {
+                    rules: [
+                      {
+                        required: true,
+                        message: "Please input the amount to swap"
+                      },
+                      {
+                        validator: (_, value: any): any => {
+                          try {
+                            Coin.parse(value);
+                            return true;
+                          } catch {
+                            return false;
+                          }
+                        },
+                        message: "Invalid amount"
+                      }
+                    ]
+                  })(<Input />)}
+                </FormItem>
+                <FormItem label="Target" colon={false}>
+                  {form.getFieldDecorator("target", {
+                    rules: [
+                      {
+                        required: true,
+                        message: "Please input the denom to receive"
+                      }
+                    ]
+                  })(<Input />)}
+                </FormItem>
+                <FormItem colon={false} wrapperCol={{ span: 8, offset: 8 }}>
+                  <Button type="primary" htmlType="submit">
+                    Swap
+                  </Button>
+                </FormItem>
+              </Form>
             </div>
           ) : (
             <div className="need-sign">
@@ -138,6 +201,14 @@ class App extends Component<FormComponentProps & {}, State> {
           .container h3 {
             text-align: center;
           }
+
+          .center {
+            text-align: center;
+          }
+
+          #doge {
+            height: 40px;
+          }
         `}</style>
         <style jsx global>{`
           .no-left-padding .ant-modal-confirm-content {
@@ -148,14 +219,29 @@ class App extends Component<FormComponentProps & {}, State> {
     );
   }
 
-  private handleSubmit = (e: any) => {
+  private handleSend = (e: any) => {
     e.preventDefault();
-    this.props.form.validateFields((err, values) => {
+    this.props.form.validateFields(["to", "amount"], (err, values) => {
       if (!err) {
         const msg = new MsgSend(
           AccAddress.fromBech32(this.state.address),
           AccAddress.fromBech32(values.to),
           [Coin.parse(values.amount)]
+        );
+
+        SendTx.showModal(this.state.api!, [msg]);
+      }
+    });
+  };
+
+  private handleSwap = (e: any) => {
+    e.preventDefault();
+    this.props.form.validateFields(["asset", "target"], (err, values) => {
+      if (!err) {
+        const msg = new MsgSwap(
+          AccAddress.fromBech32(this.state.address),
+          Coin.parse(values.asset),
+          values.target as string
         );
 
         SendTx.showModal(this.state.api!, [msg]);
@@ -190,9 +276,48 @@ class App extends Component<FormComponentProps & {}, State> {
             api,
             address: accAddress.toBech32()
           });
+
+          this.updateAccountCoins();
+        })
+        .catch(e => {
+          notification.error({
+            message: "Fail to sign in",
+            description: e.toString()
+          });
+
+          this.setState({
+            api: null,
+            address: "",
+            coins: ""
+          });
         });
     });
   };
+
+  private async updateAccountCoins(): Promise<void> {
+    const { api } = this.state;
+    if (!api) {
+      return;
+    }
+
+    try {
+      const account = await api.rest.getAccount(this.state.address);
+      let coins = "";
+
+      for (const coin of account.getCoins()) {
+        coins += coin.amount.toString() + coin.denom + " ";
+      }
+
+      this.setState({
+        coins
+      });
+    } catch (e) {
+      notification.error({
+        message: "Fail to fetch account",
+        description: e.toString()
+      });
+    }
+  }
 }
 
 export default Form.create()(App);

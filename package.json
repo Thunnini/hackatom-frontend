@@ -20,7 +20,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@node-a-team/cosmosjs": "0.0.1",
+    "@node-a-team/cosmosjs": "git+https://github.com/Thunnini/cosmosjs.git#7efeedb",
     "antd": "^3.20.1",
     "next": "^9.0.0",
     "react": "^16.8.6",
