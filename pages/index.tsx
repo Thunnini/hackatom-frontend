@@ -268,6 +268,16 @@ class App extends Component<FormComponentProps & Props, State> {
                   >
                     Swap
                   </Button>
+                  <Button
+                    id="estimate"
+                    type="primary"
+                    htmlType="button"
+                    disabled={api == null}
+                    onClick={this.estimateSwap}
+                    icon="play-circle"
+                  >
+                    Estimate
+                  </Button>
                 </FormItem>
               </Form>
             </div>
@@ -308,6 +318,10 @@ class App extends Component<FormComponentProps & Props, State> {
           }
 
           .container :global(#refresh) {
+            margin-left: 10px;
+          }
+
+          .container :global(#estimate) {
             margin-left: 10px;
           }
 
@@ -379,6 +393,42 @@ class App extends Component<FormComponentProps & Props, State> {
       address: "",
       coins: ""
     });
+  };
+
+  private estimateSwap = async () => {
+    const { api, address } = this.state;
+
+    if (api) {
+      this.props.form.validateFields(
+        ["asset", "target"],
+        async (err, values) => {
+          if (!err) {
+            try {
+              const result = await api.rest.instance.get(
+                `/swap/estimate/${address}/${values.asset}/${values.target}`
+              );
+
+              if (result.status === 200 || result.status === 202) {
+                notification.info({
+                  message: "Estimate swap",
+                  description: `You will get ${result.data.coin}`
+                });
+              } else {
+                notification.error({
+                  message: "Fail to estimate swap",
+                  description: result.data
+                });
+              }
+            } catch (e) {
+              notification.error({
+                message: "Fail to estimate swap",
+                description: e.toString()
+              });
+            }
+          }
+        }
+      );
+    }
   };
 
   private handleSend = (e: any) => {
