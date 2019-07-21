@@ -250,7 +250,7 @@ class SendTx extends Component<Props & FormComponentProps> {
             colon={false}
           >
             {form.getFieldDecorator("fee", {
-              initialValue: "5000 uatom",
+              initialValue: "0 uatom",
               rules: [
                 {
                   required: true,
