@@ -138,7 +138,11 @@ class App extends Component<FormComponentProps & Props, State> {
                   <Input disabled={true} value={coins} className="white" />
                 </FormItem>
                 <FormItem colon={false} wrapperCol={{ span: 8, offset: 8 }}>
-                  <Button type="danger" onClick={this.logout}>
+                  <Button
+                    type="danger"
+                    onClick={this.logout}
+                    icon="close-square"
+                  >
                     Log out
                   </Button>
                   <Button
@@ -204,6 +208,7 @@ class App extends Component<FormComponentProps & Props, State> {
                     type="primary"
                     htmlType="submit"
                     disabled={api == null}
+                    icon="export"
                   >
                     Send
                   </Button>
@@ -259,6 +264,7 @@ class App extends Component<FormComponentProps & Props, State> {
                     type="primary"
                     htmlType="submit"
                     disabled={api == null}
+                    icon="swap"
                   >
                     Swap
                   </Button>
@@ -267,29 +273,14 @@ class App extends Component<FormComponentProps & Props, State> {
             </div>
           ) : (
             <div className="need-sign">
-              <Form layout="horizontal">
-                <FormItem
-                  label="Sign in"
-                  labelCol={{ span: 8 }}
-                  wrapperCol={{ span: 8 }}
-                  colon={false}
-                >
-                  <Button.Group size="large">
-                    <Button
-                      type="primary"
-                      onClick={this.openSignInMnemonicModal}
-                    >
-                      Nano ledger
-                    </Button>
-                    <Button
-                      type="primary"
-                      onClick={this.openSignInMnemonicModal}
-                    >
-                      Mnemonic
-                    </Button>
-                  </Button.Group>
-                </FormItem>
-              </Form>
+              <Button.Group size="large">
+                <Button type="primary" onClick={this.openSignInMnemonicModal}>
+                  Nano ledger
+                </Button>
+                <Button type="primary" onClick={this.openSignInMnemonicModal}>
+                  Mnemonic
+                </Button>
+              </Button.Group>
             </div>
           )}
         </div>
@@ -300,6 +291,10 @@ class App extends Component<FormComponentProps & Props, State> {
           }
 
           .container h3 {
+            text-align: center;
+          }
+
+          .need-sign {
             text-align: center;
           }
 
